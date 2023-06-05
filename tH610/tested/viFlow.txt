@@ -1,0 +1,99 @@
+PBG230412140958
+
+Judgement={'TextBGColor':13816530,'text':''}
+START={'Visible':True,'PushOn':False}
+Tab_CTRL_case={'initialize':0,'TX_Adj/Cal':1,'RX_Check/Cal':2,'DDM':3}
+Tab_control=Tab_CTRL_case['initialize']
+SN=Statement=""
+_6_E_R_Adjust  =_1_SetPRBS_output=False
+_4_TX_PWR_Adjust=_2_initialize_Oscilloscope=False
+_11_Alarm=_12_Warm=_5_TX_PWR_Cal=False
+_8_TX_Disable=_3_Compensate_Fiber_Loss=False
+_10_SD_Level=SCAN=_9_RX_PWR_Cal=False
+_7_Mask_Margin=False
+Assign_SN=False
+Reset_GPON=True
+Engineer_Mode=True
+H610=True
+wavelength={'850nm':0,'1310nm':1,'1550nm':2}
+OPMwavelength={'1310nm':0,'1490nm':1,'1550nm':2}
+Filter={'155.52MBd':0,'622.08MBd':1,'1.25GBd':2,'2.488832GBd':3,'2.5GBd':4}
+Mask={'STM8/OC-24':0,'STM16/OC-48':1}
+Mode={'Eye/Mask':0,'Scope':1}
+
+
+_86100D=VISA("USB0::0x0957::0xBE18::K-86100D-50195::INSTR")
+
+
+if Engineering_Mode:
+    START['Visible']=True
+    Tab_control=Tab_CTRL_case['initialize']
+else:
+    START['Visible']=False
+    Tab_control=Tab_CTRL_case['TX_Adj/Cal']
+
+
+while True:
+    ONU_Address='192.168.1.1'
+    if Tab_control==Tab_CTRL_case['initialize']:    #0
+        if START['PushOn']:
+            #Block 0
+            if Reset_GPON:
+                #State:0
+                Statement='Reset GPON'
+                telnet:diag, pbt rstgpon, sleep 5000
+                telnet:exit, sleep 500
+                telnet rtkbosa -b /var/config/rtkbosa_k_bin,sleep 2000
+                telnet:reboot
+                #State:1
+                Statement='reboot'
+                #State:2
+                for i in range(91):
+                    Statement='rebooting '+str(90-i)+'s'
+                    sleep(1000)   #1 sec
+                    if i==10:
+                        VISA-Write:_86100D+"ACQ-CDIS"
+                Reset_GPON=False
+                Statement['Visible']=True
+                if Assign_SN:
+                    SN=""
+                else:
+                    SN=input("input SN string")
+            #Block 1
+            connectID=telnet(ONU_Address)
+            PRBS31_Status=Set_PRBS31_TX1244RX2488_TCP_2(connectID)
+            VISA86100D_resource=VISA(_86100D)
+            _86100D_Reset(VISA86100D_resource)
+            sleep 500
+            _86100D_Set_CH1_Wavelength(VISA86100D_resource,wavelength['1310nm'])
+            _86100D_Set_CH1_Filter(VISA86100D_resource,Filter['1.25GBd'])   
+            _86100D_Set_CH1_Mask(VISA86100D_resource,Mask['STM8/OC-24'])
+            _86100D_Change_Mode(VISA86100D_resource,Mode['Eye/Mask'])
+            ##blk0
+            VISA_Write(VISA86100D_resource,'aut')      #auto scale
+            sleep 3000
+            Mask_Margin=_86100D_Query_Mask_Margin(VISA86100D_resource)
+            _86100D_Measure_CH1_OPER(VISA86100D_resource)
+            Error_out=VISA_Write(VISA86100D_resource,'aut')      #auto scale
+            Error_List=unbundle(Error_out)
+            _2_initialize_Oscilloscope=~Error_List[0]
+            _1_SetPRBS_output=(Mask_Margin>30) & PRBS31_Status
+            #Block 2
+            VISA_OPM_resource=VISA(VISA_OPM)
+            OPM4201_Set_Wavelength(VISA_OPM_resource,OPMwavelength['1310nm'])
+            messagebox('Connect DUT optical output to OPM')
+            for i in range(3):
+                OPM_power=OPM4201_Get_Power(VISA_OPM_resource)
+                
+                        
+                    
+                    
+def OPM4201_Get_Power(src,cmd=b'\xAA\x03\x70\x00\x1d'):
+
+
+
+
+    
+
+
+    
