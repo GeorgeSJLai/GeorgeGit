@@ -2,7 +2,7 @@
 import tkinter as tk
 from tkinter import INSERT,messagebox,ttk
 from tkinter import simpledialog
-#import tkinter.font as tkfont
+#import tkinter.font as tkfont => for git test 000
 import Devices,time,pickle,sys
 import Global as g
 
